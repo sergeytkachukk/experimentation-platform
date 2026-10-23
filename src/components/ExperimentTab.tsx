@@ -133,10 +133,17 @@ export default function ExperimentTab() {
             <div className="field-head"><span>Table (dataset ab_sandbox)</span></div>
             <input
               type="text"
+              list="bq-tables"
               value={bqTable}
               onChange={(e) => setBqTable(e.target.value.trim())}
               onKeyDown={(e) => e.key === 'Enter' && void loadBq(bqTable, params.metric)}
             />
+            <datalist id="bq-tables">
+              <option value="users">+15%: clear win</option>
+              <option value="users_loss">-15%: clear loss</option>
+              <option value="users_aa">0%: A/A, no difference</option>
+              <option value="users_small">+3%: tiny effect</option>
+            </datalist>
             <button style={{ marginTop: 8 }} onClick={() => void loadBq(bqTable, params.metric)} disabled={bq.status === 'loading'}>
               {bq.status === 'loading' ? 'Loading…' : 'Load data'}
             </button>

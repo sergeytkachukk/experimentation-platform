@@ -1,75 +1,102 @@
-# React + TypeScript + Vite
+# A/B test sandbox
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A pet project for learning how A/B tests behave. You set a "true" effect, the app simulates users (or reads a real table
+from BigQuery), and shows what frequentist and Bayesian statistics make of the data, including the traps that produce
+false wins: peeking, sample ratio mismatch (SRM), noisy revenue metrics.
 
-Currently, two official plugins are available:
+> No back end is needed for the simulator. The BigQuery mode adds a tiny local API so Google credentials never reach the browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+| Area | Details |
+|---|---|
+| **Simulator** | Hash-based bucketing, conversion / click / revenue metrics (heavy-tailed order values), optional SRM injection, up to 300,000 users, seeded and reproducible |
+| **Frequentist** | Two-proportion z-test, Welch's t-test, confidence intervals, uplift, SRM chi-square check |
+| **Bayesian** | GrowthBook-style engine: Gaussian posterior of the relative lift (delta method), chance to win, expected loss ("risk"), credible interval, optional informative prior |
+| **Variance reduction** | CUPED, from raw rows or from SQL aggregates |
+| **Bootstrap** | Percentile CI and p-value for the difference in means (sanity check for revenue) |
+| **Peeking and A/A** | p-value / chance-to-win over time; 300 A/A tests comparing "look once" vs "stop at first win" for both frameworks |
+| **Power calculator** | Sample size, duration, power curve for proportions and means |
+| **BigQuery source** | Load an experiment table (`control` / `treatment`) and run the same analysis on real aggregates |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The result row mimics GrowthBook: control and treatment values, chance to win, and a violin of the relative change
+(red below zero, green above).
 
-## Expanding the ESLint configuration
+## Quick start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Requirements: **Node 22** (`nvm use` reads `.nvmrc`) and Yarn.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+yarn install
+yarn dev        # simulator only, http://localhost:3002
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+To use the BigQuery source as well, run the UI and the local API together:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+yarn start      # UI on :3002 and API on :3003
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Using BigQuery (optional)
+
+1. Create a Google Cloud project and open BigQuery (the free tier is plenty).
+2. Run [`docs/bigquery/setup.sql`](docs/bigquery/setup.sql) in the BigQuery console. It creates 100,000 dummy users and four
+   tables with different built-in effects on purchase rate: `users` (+15%), `users_loss` (-15%), `users_aa` (0%), `users_small` (+3%).
+   Type the table name in the app (suggestions appear) to compare a win, a loss and a null result.
+3. Log in locally so the API can read the table:
+   ```bash
+   gcloud auth application-default login
+   ```
+4. `yarn start`, then choose **Data source → BigQuery** and press **Load data**.
+
+The API resolves the project from your Application Default Credentials. Override with `BQ_PROJECT`, `BQ_DATASET`
+(default `ab_sandbox`) or `PORT` (default `3003`). Credentials stay in `~/.config/gcloud`, never in the repo or the browser.
+
+## How it fits together
 
 ```
+ Browser (React)  ──►  Vite dev server :3002  ──/api──►  server/index.ts :3003  ──SQL──►  BigQuery
+   │                                                          │
+   │ z-test, Welch, Bayesian, CUPED run here                  └─ returns per-variant aggregates only
+   ▼                                                             (n, mean, variance, cov with pre-period)
+ Simulator generates users in the browser
+```
+
+BigQuery does the heavy lifting with one `GROUP BY variant`. The browser receives two rows and runs the same
+statistics code as in simulator mode.
+
+## Project structure
+
+```
+src/
+  stats/        z-test, Welch, Bayesian, CUPED, bootstrap, power (pure TypeScript, unit tested)
+  sim/          seeded RNG, bucketing, user simulation, A/A runner
+  bq/           client for the local API
+  components/   Experiment / Power tabs, result row, panels
+server/         local BigQuery API (aggregates only) and SQL builder
+docs/           Russian guide (GUIDE.ru.md + PDF), BigQuery setup SQL, PDF build scripts (GUIDE.md, the English guide, is in the repo root)
+```
+
+## Scripts
+
+| Command | Purpose |
+|---|---|
+| `yarn dev` | UI only (simulator) |
+| `yarn server` | BigQuery API only |
+| `yarn start` | UI and API together |
+| `yarn test` | Vitest (statistics, simulator, SQL builder, rendering) |
+| `yarn lint` / `yarn build` | ESLint / type-check and production build |
+
+## Limitations and ideas
+
+- The effect is the same for every user; no segments, seasonality or multiple metrics at once.
+- The Bayesian engine is Gaussian (like GrowthBook), so it is rougher for samples of a few dozen users.
+- BigQuery mode has no time dimension, so peeking, A/A and bootstrap are simulator-only.
+- Ideas: sequential testing (always-valid p-values), multiple-comparison corrections, real GA4 export as the source,
+  timestamps in the dummy table so peeking works on real data.
+
+## Learning material
+
+[`GUIDE.md`](GUIDE.md) walks through every control and number, with exercises (a Russian version is in
+[`docs/GUIDE.ru.md`](docs/GUIDE.ru.md)). A Russian PDF version with charts and a glossary is in
+[`docs/AB-sandbox-guide.pdf`](docs/AB-sandbox-guide.pdf).

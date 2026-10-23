@@ -20,6 +20,19 @@ export function Help({ children, title = 'How to read this' }: { children: React
   )
 }
 
+// One-line experiment summary (GrowthBook-style header): label: value pairs.
+export function SummaryBar({ items, warn }: { items: [string, string][]; warn?: string }) {
+  return (
+    <div className="summary-bar">
+      {items.map(([k, v]) => (
+        <span key={k} className={warn === k ? 'warn' : undefined}>
+          {k}: <b>{v}</b>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function Banner({ tone, title, children }: { tone: 'good' | 'bad' | 'neutral' | 'warn'; title: string; children?: ReactNode }) {
   return (
     <div className={`banner ${tone}`}>

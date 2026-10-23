@@ -1,6 +1,7 @@
 import { sampleSizePerVariant } from '../../stats/tests.ts'
 import { fmtP, pct, RISK_THRESHOLD, WIN_THRESHOLD } from '../format.ts'
-import { Banner, Help, Stat } from '../ui.tsx'
+import ResultRow from '../ResultRow.tsx'
+import { Banner, Help, Stat, SummaryBar } from '../ui.tsx'
 import type { Workspace } from '../workspace.ts'
 
 export default function ResultsPanel({ w }: { w: Workspace }) {
@@ -27,7 +28,18 @@ export default function ResultsPanel({ w }: { w: Workspace }) {
 
   return (
     <>
+      <SummaryBar
+        items={[
+          ['Source', source === 'bigquery' ? 'BigQuery' : 'Simulator'],
+          ['Total users', (a.control.n + a.treatment.n).toLocaleString()],
+          ['CUPED', useCuped ? 'Enabled' : 'Disabled'],
+          ['Prior', prior ? `Gaussian, sd ${prior.toFixed(2)}` : 'Flat'],
+          ['SRM', srmBad ? 'Problem' : 'OK'],
+        ]}
+        warn={srmBad ? 'SRM' : undefined}
+      />
       <Banner tone={headline.tone} title={headline.title}>{headline.text}</Banner>
+      <ResultRow w={w} />
       <div className="cols">
         <div className="panel">
           <h2>Frequentist <span className="tag">{a.testName}</span></h2>
@@ -35,7 +47,7 @@ export default function ResultsPanel({ w }: { w: Workspace }) {
             <Stat label={`Control (n=${a.control.n.toLocaleString()})`} value={fmtVal(a.control.mean)} />
             <Stat label={`Treatment (n=${a.treatment.n.toLocaleString()})`} value={fmtVal(a.treatment.mean)} />
             <Stat label="Uplift" value={pct(freq.uplift)} />
-            <Stat label="p-value" value={fmtP(freq.pValue)} tone={significant ? 'good' : undefined} />
+            <Stat label="p-value" value={fmtP(freq.pValue)} tone={significant ? (freq.uplift > 0 ? 'good' : 'bad') : undefined} />
             <Stat label={`${pct(1 - params.alpha, 0)} CI (absolute diff)`} value={`[${fmtVal(freq.ci[0])}, ${fmtVal(freq.ci[1])}]`} small />
             <Stat label="SRM p-value" value={fmtP(srmPValue)} tone={srmBad ? 'bad' : undefined} />
           </div>

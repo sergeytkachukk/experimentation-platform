@@ -79,3 +79,33 @@ details.help .note { margin: 4px 0 0; }
 .seg.wide button { flex: 1; margin: 0; }
 .setup .note.bad, .note.bad { color: var(--bad); }
 input[type='text'] { width: 100%; }
+
+/* --- GrowthBook-style result row --- */
+.summary-bar { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.summary-bar b { color: var(--text); font-weight: 600; }
+.summary-bar .warn b { color: var(--bad); }
+.result-row-panel { overflow-x: auto; }
+.result-table { display: grid; grid-template-columns: minmax(120px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(90px, 1fr) minmax(90px, auto); column-gap: 12px; align-items: center; min-width: 560px; }
+.rt-head { font-size: 12px; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.rt-head.right { justify-content: flex-end; }
+.rt-head .dot { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--muted); align-items: center; justify-content: center; font-size: 10px; }
+.rt-head .dot.t { border-color: var(--good); color: var(--good); }
+.rt-head .dot.c { border-color: var(--accent); color: var(--accent); }
+.rt-name { font-weight: 600; padding-top: 10px; font-size: 14px; }
+.rt-val, .rt-win, .rt-plot, .rt-change { padding-top: 10px; }
+.rt-val { font-size: 16px; font-weight: 600; }
+.rt-val small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); font-style: italic; }
+.rt-win { font-size: 17px; font-weight: 600; }
+.rt-change { text-align: right; font-size: 17px; font-weight: 700; }
+.good { color: var(--good); } .bad { color: var(--bad); }
+.violin { width: 100%; height: auto; display: block; }
+.violin .grid { stroke: var(--border); stroke-width: 1; }
+.violin .zero { stroke: var(--text); stroke-width: 1.5; opacity: 0.8; }
+.violin .tick { fill: var(--text); font-size: 14px; }
+.violin .tickmark { stroke: var(--text); stroke-width: 1.2; }
+.violin .neg { fill: var(--bad); opacity: 0.5; }
+.violin .pos { fill: var(--good); opacity: 0.5; }
+.violin .mean { stroke: var(--text); stroke-width: 2; }
+.muted { color: var(--muted); font-size: 13px; }
+.rt-sub { grid-column: 1 / -1; margin-top: 18px; padding-bottom: 6px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.rt-plot { grid-column: 1 / -1; padding-top: 4px; }

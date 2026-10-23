@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "server": "node server/index.ts"
+    "server": "node server/index.ts",
+    "start": "concurrently -k -n web,api -c blue,green \"vite\" \"node server/index.ts\""
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.4.0",
@@ -23,6 +24,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
