@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Field } from './ui.tsx'
 import { powerMeans, powerProportions, sampleSizeMeans, sampleSizePerVariant } from '../stats/tests.ts'
 
 type Mode = 'proportion' | 'mean'
@@ -45,10 +46,7 @@ export default function PowerTab() {
           </select>
         </label>
         {mode === 'proportion' ? (
-          <label>
-            Baseline rate <span>{pct(baseline)}</span>
-            <input type="range" min={0.01} max={0.5} step={0.005} value={baseline} onChange={(e) => setBaseline(+e.target.value)} />
-          </label>
+          <Field label="Baseline rate" value={baseline} onChange={setBaseline} min={0.01} max={0.5} step={0.005} scale={100} suffix="%" decimals={1} />
         ) : (
           <>
             <label>
@@ -61,10 +59,7 @@ export default function PowerTab() {
             </label>
           </>
         )}
-        <label>
-          Minimum detectable effect (relative) <span>{pct(mde)}</span>
-          <input type="range" min={0.01} max={0.5} step={0.01} value={mde} onChange={(e) => setMde(+e.target.value)} />
-        </label>
+        <Field label="Minimum detectable effect (relative)" value={mde} onChange={setMde} min={0.01} max={0.5} step={0.01} scale={100} suffix="%" decimals={0} />
         <label>
           Alpha <span>{alpha}</span>
           <select value={alpha} onChange={(e) => setAlpha(+e.target.value)}>
@@ -73,10 +68,7 @@ export default function PowerTab() {
             <option value={0.1}>0.1</option>
           </select>
         </label>
-        <label>
-          Power <span>{pct(power, 0)}</span>
-          <input type="range" min={0.5} max={0.99} step={0.01} value={power} onChange={(e) => setPower(+e.target.value)} />
-        </label>
+        <Field label="Power" value={power} onChange={setPower} min={0.5} max={0.99} step={0.01} scale={100} suffix="%" decimals={0} />
         <label>
           Eligible users per day (both variants)
           <input type="number" min={1} value={daily} onChange={(e) => setDaily(Math.max(1, +e.target.value))} />

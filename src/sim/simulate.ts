@@ -117,26 +117,41 @@ export interface FalsePositiveStats {
   bayesPeeking: number // same, at ANY look
 }
 
-// Run many A/A tests (no real effect) and compare fixed-horizon vs peeking false positive rates.
-export function runAATests(base: SimParams, runs: number, priorSd?: number | null): FalsePositiveStats {
-  const out = { freqFixed: 0, freqPeeking: 0, bayesFixed: 0, bayesPeeking: 0 }
+export interface AARunFlags {
+  freqFixed: boolean
+  freqPeeking: boolean
+  bayesFixed: boolean
+  bayesPeeking: boolean
+}
+
+// A single A/A test (no real effect): did it produce a false win at the final look / at any look?
+export function runSingleAA(base: SimParams, index: number, priorSd?: number | null): AARunFlags {
   const decisive = (c: number) => c >= 1 - base.alpha || c <= base.alpha
-  for (let i = 0; i < runs; i++) {
-    const { path } = simulate(
-      { ...base, relativeEffect: 0, actualTreatmentShare: base.treatmentShare, seed: base.seed + i + 1 },
-      { keepData: false, priorSd },
-    )
-    const last = path[path.length - 1]
-    if (last.pValue < base.alpha) out.freqFixed++
-    if (path.some((pt) => pt.pValue < base.alpha)) out.freqPeeking++
-    if (decisive(last.chanceToWin)) out.bayesFixed++
-    if (path.some((pt) => decisive(pt.chanceToWin))) out.bayesPeeking++
-  }
+  const { path } = simulate(
+    { ...base, relativeEffect: 0, actualTreatmentShare: base.treatmentShare, seed: base.seed + index + 1 },
+    { keepData: false, priorSd },
+  )
+  const last = path[path.length - 1]
   return {
-    runs,
-    freqFixed: out.freqFixed / runs,
-    freqPeeking: out.freqPeeking / runs,
-    bayesFixed: out.bayesFixed / runs,
-    bayesPeeking: out.bayesPeeking / runs,
+    freqFixed: last.pValue < base.alpha,
+    freqPeeking: path.some((pt) => pt.pValue < base.alpha),
+    bayesFixed: decisive(last.chanceToWin),
+    bayesPeeking: path.some((pt) => decisive(pt.chanceToWin)),
   }
+}
+
+export function summarizeAA(flags: AARunFlags[]): FalsePositiveStats {
+  const share = (key: keyof AARunFlags) => flags.filter((f) => f[key]).length / flags.length
+  return {
+    runs: flags.length,
+    freqFixed: share('freqFixed'),
+    freqPeeking: share('freqPeeking'),
+    bayesFixed: share('bayesFixed'),
+    bayesPeeking: share('bayesPeeking'),
+  }
+}
+
+// Run many A/A tests and compare fixed-horizon vs peeking false positive rates.
+export function runAATests(base: SimParams, runs: number, priorSd?: number | null): FalsePositiveStats {
+  return summarizeAA(Array.from({ length: runs }, (_, i) => runSingleAA(base, i, priorSd)))
 }

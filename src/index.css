@@ -48,3 +48,30 @@ button:disabled { opacity: 0.6; cursor: wait; }
 table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 500; font-size: 13px; }
+
+/* --- v2 layout: fields, sub-tabs, banners, collapsible help --- */
+.setup { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.field { margin-bottom: 14px; }
+.field-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+.field-input { display: inline-flex; align-items: center; gap: 4px; }
+.field-input input { width: 92px; margin: 0; padding: 3px 6px; text-align: right; color: var(--text); }
+.field-input em { font-style: normal; color: var(--muted); width: 12px; }
+.field select, .field > input { margin-top: 6px; }
+.field input[type='range'] { margin-top: 6px; }
+details.adv { border-top: 1px solid var(--border); margin: 6px 0 14px; padding-top: 10px; }
+details.adv summary, details.help summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-bottom: 10px; list-style: none; }
+details.adv summary::before, details.help summary::before { content: '\25B8  '; }
+details[open] > summary::before { content: '\25BE  '; }
+details.help { margin-top: 10px; }
+details.help summary { margin-bottom: 4px; }
+details.help .note { margin: 4px 0 0; }
+.subtabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.subtabs button { background: transparent; color: var(--muted); border: 1px solid var(--border); margin: 0; }
+.subtabs button.on { background: var(--accent); color: #0b1020; border-color: var(--accent); }
+.banner { display: flex; flex-direction: column; gap: 2px; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--border); border-left-width: 4px; background: var(--panel); }
+.banner span { color: var(--muted); font-size: 13px; }
+.banner.good { border-left-color: var(--good); } .banner.good b { color: var(--good); }
+.banner.bad { border-left-color: var(--bad); } .banner.bad b { color: var(--bad); }
+.banner.warn { border-left-color: #e8b04a; } .banner.warn b { color: #e8b04a; }
+.banner.neutral { border-left-color: var(--muted); }
+.stale { opacity: 0.6; transition: opacity 0.15s; }
