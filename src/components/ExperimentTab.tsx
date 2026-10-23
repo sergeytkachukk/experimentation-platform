@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { analyze, analyzeSummaries, computeCuped, cupedFromSummaries } from '../analysis.ts'
-import { fetchSummary } from '../bq/client.ts'
+import { BqUnavailableError, DEMO_TABLES, demoSummary, fetchSummary } from '../bq/client.ts'
 import type { BqMetric, BqSummary } from '../bq/client.ts'
 import { simulate, srmPValue } from '../sim/simulate.ts'
 import type { FalsePositiveStats, MetricType, SimParams } from '../sim/simulate.ts'
@@ -34,6 +34,14 @@ const SUBS: { id: Sub; label: string; bigquery: boolean }[] = [
   { id: 'advanced', label: 'CUPED & Bootstrap', bigquery: true },
 ]
 
+const CUSTOM_TABLE = '__custom'
+const TABLE_OPTIONS: [string, string][] = [
+  ['users', 'users: +15%, clear win'],
+  ['users_loss', 'users_loss: −15%, clear loss'],
+  ['users_aa', 'users_aa: 0%, no difference'],
+  ['users_small', 'users_small: +3%, tiny effect'],
+]
+
 type BqState =
   | { status: 'idle' }
   | { status: 'loading' }
@@ -51,15 +59,22 @@ export default function ExperimentTab() {
   const [boot, setBoot] = useState<BootState | null>(null)
   const [bq, setBq] = useState<BqState>({ status: 'idle' })
   const [bqTable, setBqTable] = useState('users')
+  const [bqSample, setBqSample] = useState(false)
+  const [bqCustom, setBqCustom] = useState(false)
   const set = <K extends keyof SimParams>(key: K, value: SimParams[K]) => setParams((p) => ({ ...p, [key]: value }))
 
-  const loadBq = async (table: string, metric: MetricType) => {
+  const loadBq = async (table: string, metric: MetricType, sample = bqSample) => {
     if (metric === 'click') return
     setBq({ status: 'loading' })
     try {
-      setBq({ status: 'ok', data: await fetchSummary(table, metric as BqMetric) })
+      setBq({ status: 'ok', data: sample ? demoSummary(table, metric as BqMetric) : await fetchSummary(table, metric as BqMetric) })
     } catch (e) {
-      setBq({ status: 'error', message: e instanceof Error ? e.message : String(e) })
+      // BigQuery is not set up on this machine: fall back to the bundled sample data so the view still works.
+      if (e instanceof BqUnavailableError && DEMO_TABLES.includes(table)) {
+        setBq({ status: 'ok', data: demoSummary(table, metric as BqMetric, e.message) })
+      } else {
+        setBq({ status: 'error', message: e instanceof Error ? e.message : String(e) })
+      }
     }
   }
 
@@ -91,7 +106,7 @@ export default function ExperimentTab() {
       const raw = analyzeSummaries(control, treatment, { ...o, cuped: false }, cuped)
       const adjusted = analyzeSummaries(control, treatment, { ...o, cuped: true }, cuped)
       return {
-        source, params: deferred, prior, useCuped, cuped, raw, adjusted, active: useCuped ? adjusted : raw, path: [],
+        source, sample: bq.data.sample, params: deferred, prior, useCuped, cuped, raw, adjusted, active: useCuped ? adjusted : raw, path: [],
         srmPValue: srmPValue(control.n, treatment.n, deferred.treatmentShare),
       }
     }
@@ -99,7 +114,7 @@ export default function ExperimentTab() {
     const cuped = computeCuped(sim)
     const raw = analyze(sim, { ...o, cuped: false }, cuped)
     const adjusted = analyze(sim, { ...o, cuped: true }, cuped)
-    return { source, params: deferred, prior, useCuped, cuped, raw, adjusted, active: useCuped ? adjusted : raw, path: sim.path, srmPValue: sim.srmPValue }
+    return { source, sample: false, params: deferred, prior, useCuped, cuped, raw, adjusted, active: useCuped ? adjusted : raw, path: sim.path, srmPValue: sim.srmPValue }
   }, [deferred, prior, useCuped, source, bq])
 
   const isRevenue = params.metric === 'revenue'
@@ -131,24 +146,58 @@ export default function ExperimentTab() {
         {isBq ? (
           <div className="field">
             <div className="field-head"><span>Table (dataset ab_sandbox)</span></div>
-            <input
-              type="text"
-              list="bq-tables"
-              value={bqTable}
-              onChange={(e) => setBqTable(e.target.value.trim())}
-              onKeyDown={(e) => e.key === 'Enter' && void loadBq(bqTable, params.metric)}
-            />
-            <datalist id="bq-tables">
-              <option value="users">+15%: clear win</option>
-              <option value="users_loss">-15%: clear loss</option>
-              <option value="users_aa">0%: A/A, no difference</option>
-              <option value="users_small">+3%: tiny effect</option>
-            </datalist>
+            <select
+              value={bqCustom ? CUSTOM_TABLE : bqTable}
+              onChange={(e) => {
+                if (e.target.value === CUSTOM_TABLE) return setBqCustom(true)
+                setBqCustom(false)
+                setBqTable(e.target.value)
+                void loadBq(e.target.value, params.metric)
+              }}
+            >
+              {TABLE_OPTIONS.map(([name, label]) => (
+                <option key={name} value={name}>{label}</option>
+              ))}
+              <option value={CUSTOM_TABLE}>Other table…</option>
+            </select>
+            {bqCustom && (
+              <input
+                type="text"
+                placeholder="table name"
+                value={bqTable}
+                style={{ marginTop: 8 }}
+                onChange={(e) => setBqTable(e.target.value.trim())}
+                onKeyDown={(e) => e.key === 'Enter' && void loadBq(bqTable, params.metric)}
+              />
+            )}
             <button style={{ marginTop: 8 }} onClick={() => void loadBq(bqTable, params.metric)} disabled={bq.status === 'loading'}>
               {bq.status === 'loading' ? 'Loading…' : 'Load data'}
             </button>
-            {bq.status === 'ok' && <p className="note">Loaded {bq.data.project}.{bq.data.dataset}.{bq.data.table}: control {bq.data.control.n.toLocaleString()}, treatment {bq.data.treatment.n.toLocaleString()} users.</p>}
-            {bq.status === 'error' && <p className="note bad">{bq.message}</p>}
+            <label className="check" style={{ marginTop: 10 }}>
+              <input
+                type="checkbox"
+                checked={bqSample}
+                onChange={(e) => {
+                  setBqSample(e.target.checked)
+                  void loadBq(bqTable, params.metric, e.target.checked)
+                }}
+              />{' '}
+              Use bundled sample data (no Google account needed)
+            </label>
+            {bq.status === 'ok' && (
+              <p className="note" title={bq.data.fallbackReason}>
+                {bq.data.fallbackReason
+                  ? `BigQuery is not connected on this machine, so the bundled sample data is shown (${bq.data.table}: control ${bq.data.control.n.toLocaleString()}, treatment ${bq.data.treatment.n.toLocaleString()} users). It is generated locally, not read from BigQuery.`
+                  : bq.data.sample
+                    ? `Sample data for ${bq.data.table}: control ${bq.data.control.n.toLocaleString()}, treatment ${bq.data.treatment.n.toLocaleString()} users. Generated locally with the recipe of setup.sql, not read from BigQuery.`
+                    : `Loaded ${bq.data.project}.${bq.data.dataset}.${bq.data.table}: control ${bq.data.control.n.toLocaleString()}, treatment ${bq.data.treatment.n.toLocaleString()} users.`}
+              </p>
+            )}
+            {bq.status === 'error' && (
+              <p className="note bad">
+                {bqSample ? bq.message : `${bq.message.replace(/\.?$/, '.')} You can also tick "Use bundled sample data" to try this view without Google.`}
+              </p>
+            )}
           </div>
         ) : (
           <>

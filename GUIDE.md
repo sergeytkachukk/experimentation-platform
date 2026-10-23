@@ -192,15 +192,17 @@ BigQuery computes the per-group totals itself with one `GROUP BY variant` query,
 | `users`       | +15%            | a clear win                                                     |
 | `users_loss`  | −15%            | a clear loss (red violin)                                       |
 | `users_aa`    | 0%              | no real difference (A/A)                                        |
-| `users_small` | +3%             | a real but tiny effect, usually "not significant" at 100k users |
+| `users_small` | +3% | a real but small effect: borderline at 100k users, it can land on either side of "significant" (the bundled sample gives +4.4%, p = 0.023) |
 
 3. Log in locally: `gcloud auth application-default login`.
 4. Run `yarn start` (UI and server together).
-5. In the app: **Data source → BigQuery**, type or pick a table name (suggestions appear), then **Load data**.
+5. In the app: **Data source → BigQuery**, pick a table from the dropdown, then **Load data**.
 
 **What you will see** for the `users` table (numbers differ slightly each time the table is created): conversion around 10.1% in control and 11.4% in treatment, uplift ≈ +13%, p < 0.0001, chance to win 100%, "Treatment wins". On revenue the result is borderline (≈ +6%, p ≈ 0.045): revenue is noisy.
 
 **What is unavailable in this mode:** the peeking chart and A/A (the table has no time dimension) and bootstrap (it needs per-user rows). CUPED works: it can be computed from the SQL totals.
+
+**No Google account?** You do not need one. If BigQuery is not connected (no `yarn server`, no keys, or a static host), the BigQuery view **automatically** shows pre-computed aggregates for the same four tables that ship with the project (generated locally with the recipe of `setup.sql`, not read from BigQuery) and says so under the table picker. The Source line then shows "BigQuery (sample data)". You can also force this with the **Use bundled sample data** checkbox. Pick a table from the dropdown (or "Other table…" for your own) and switch the metric to compare a win, a loss, an A/A and a small effect.
 
 **If something goes wrong:** "Cannot reach the BigQuery API" means `yarn server` is not running (or just run `yarn start`); "Google credentials not found" means you need to run `gcloud auth application-default login` and restart the server.
 

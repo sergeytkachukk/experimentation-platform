@@ -5,7 +5,7 @@ import { Banner, Help, Stat, SummaryBar } from '../ui.tsx'
 import type { Workspace } from '../workspace.ts'
 
 export default function ResultsPanel({ w }: { w: Workspace }) {
-  const { params, source, srmPValue, active: a, useCuped, prior } = w
+  const { params, source, sample, srmPValue, active: a, useCuped, prior } = w
   const { freq, bayes } = a
   const isRevenue = params.metric === 'revenue'
   const significant = freq.pValue < params.alpha
@@ -30,7 +30,7 @@ export default function ResultsPanel({ w }: { w: Workspace }) {
     <>
       <SummaryBar
         items={[
-          ['Source', source === 'bigquery' ? 'BigQuery' : 'Simulator'],
+          ['Source', source === 'bigquery' ? (sample ? 'BigQuery (sample data)' : 'BigQuery') : 'Simulator'],
           ['Total users', (a.control.n + a.treatment.n).toLocaleString()],
           ['CUPED', useCuped ? 'Enabled' : 'Disabled'],
           ['Prior', prior ? `Gaussian, sd ${prior.toFixed(2)}` : 'Flat'],

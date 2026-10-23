@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "server": "node server/index.ts",
-    "start": "concurrently -k -n web,api -c blue,green \"vite\" \"node server/index.ts\""
+    "start": "concurrently -k -n web,api -c blue,green \"vite\" \"node server/index.ts\"",
+    "demo-data": "node scripts/make-demo-data.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.4.0",

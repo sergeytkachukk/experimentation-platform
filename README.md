@@ -17,7 +17,7 @@ false wins: peeking, sample ratio mismatch (SRM), noisy revenue metrics.
 | **Bootstrap** | Percentile CI and p-value for the difference in means (sanity check for revenue) |
 | **Peeking and A/A** | p-value / chance-to-win over time; 300 A/A tests comparing "look once" vs "stop at first win" for both frameworks |
 | **Power calculator** | Sample size, duration, power curve for proportions and means |
-| **BigQuery source** | Load an experiment table (`control` / `treatment`) and run the same analysis on real aggregates |
+| **BigQuery source** | Load an experiment table (`control` / `treatment`) and run the same analysis on real aggregates; bundled sample data lets anyone try it without a Google account |
 
 The result row mimics GrowthBook: control and treatment values, chance to win, and a violin of the relative change
 (red below zero, green above).
@@ -42,12 +42,17 @@ yarn start      # UI on :3002 and API on :3003
 1. Create a Google Cloud project and open BigQuery (the free tier is plenty).
 2. Run [`docs/bigquery/setup.sql`](docs/bigquery/setup.sql) in the BigQuery console. It creates 100,000 dummy users and four
    tables with different built-in effects on purchase rate: `users` (+15%), `users_loss` (-15%), `users_aa` (0%), `users_small` (+3%).
-   Type the table name in the app (suggestions appear) to compare a win, a loss and a null result.
+   Pick a table in the app to compare a win, a loss, a null result and a small effect.
 3. Log in locally so the API can read the table:
    ```bash
    gcloud auth application-default login
    ```
 4. `yarn start`, then choose **Data source → BigQuery** and press **Load data**.
+
+**No Google account? Nothing to set up.** If BigQuery is not connected, the BigQuery view automatically falls back to pre-computed
+aggregates for the same four tables from [`src/bq/demo-summaries.json`](src/bq/demo-summaries.json), generated locally with the recipe
+of `setup.sql` (`yarn demo-data`). It says so in the UI, nothing leaves your machine, and it also works on a static host. The
+**Use bundled sample data** checkbox forces this mode.
 
 The API resolves the project from your Application Default Credentials. Override with `BQ_PROJECT`, `BQ_DATASET`
 (default `ab_sandbox`) or `PORT` (default `3003`). Credentials stay in `~/.config/gcloud`, never in the repo or the browser.
@@ -84,6 +89,7 @@ docs/           Russian guide (GUIDE.ru.md + PDF), BigQuery setup SQL, PDF build
 | `yarn dev` | UI only (simulator) |
 | `yarn server` | BigQuery API only |
 | `yarn start` | UI and API together |
+| `yarn demo-data` | Regenerate the bundled sample data (`src/bq/demo-summaries.json`) |
 | `yarn test` | Vitest (statistics, simulator, SQL builder, rendering) |
 | `yarn lint` / `yarn build` | ESLint / type-check and production build |
 

@@ -17,7 +17,7 @@ function workspace(p: SimParams): Workspace {
   const o = { metric: p.metric, alpha: p.alpha, priorSd: null }
   const raw = analyze(sim, { ...o, cuped: false }, cuped)
   const adjusted = analyze(sim, { ...o, cuped: true }, cuped)
-  return { source: 'simulator', params: p, prior: null, useCuped: false, cuped, raw, adjusted, active: raw, path: sim.path, srmPValue: sim.srmPValue }
+  return { source: 'simulator', sample: false, params: p, prior: null, useCuped: false, cuped, raw, adjusted, active: raw, path: sim.path, srmPValue: sim.srmPValue }
 }
 
 describe('ResultRow', () => {

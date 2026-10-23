@@ -6,6 +6,7 @@ export type DataSource = 'simulator' | 'bigquery'
 // Everything the result panels need, computed once in ExperimentTab.
 export interface Workspace {
   source: DataSource
+  sample: boolean // BigQuery view fed by the bundled sample data
   params: SimParams
   prior: number | null
   useCuped: boolean

@@ -35,7 +35,7 @@ FROM ab_sandbox.users_raw;
 --   users        +15% purchase rate  -> clear win
 --   users_loss   -15%                -> clear loss (treatment is worse)
 --   users_aa     0%                  -> A/A, no real difference
---   users_small  +3%                 -> real but tiny effect, usually "not significant" at 100k users
+--   users_small  +3%                 -> real but small effect, borderline at 100k users (can go either way)
 CREATE OR REPLACE TABLE ab_sandbox.users_loss AS
 SELECT
   user_id, variant, u_pre < propensity AS pre_converted,
