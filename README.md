@@ -37,38 +37,16 @@ To use the BigQuery source as well, run the UI and the local API together:
 yarn start      # UI on :3002 and API on :3003
 ```
 
-## Using BigQuery (optional)
+## BigQuery (optional)
 
-1. Create a Google Cloud project and open BigQuery (the free tier is plenty).
-2. Run [`docs/bigquery/setup.sql`](docs/bigquery/setup.sql) in the BigQuery console. It creates 100,000 dummy users and four
-   tables with different built-in effects on purchase rate: `users` (+15%), `users_loss` (-15%), `users_aa` (0%), `users_small` (+3%).
-   Pick a table in the app to compare a win, a loss, a null result and a small effect.
-3. Log in locally so the API can read the table:
-   ```bash
-   gcloud auth application-default login
-   ```
-4. `yarn start`, then choose **Data source → BigQuery** and press **Load data**.
+The BigQuery view works out of the box: when BigQuery is not connected it automatically falls back to bundled sample data
+([`src/bq/demo-summaries.json`](src/bq/demo-summaries.json), `yarn demo-data`), so no Google account or keys are needed.
+The UI says so whenever sample data is shown.
 
-**No Google account? Nothing to set up.** If BigQuery is not connected, the BigQuery view automatically falls back to pre-computed
-aggregates for the same four tables from [`src/bq/demo-summaries.json`](src/bq/demo-summaries.json), generated locally with the recipe
-of `setup.sql` (`yarn demo-data`). It says so in the UI, nothing leaves your machine, and it also works on a static host. The
-**Use bundled sample data** checkbox forces this mode.
-
-The API resolves the project from your Application Default Credentials. Override with `BQ_PROJECT`, `BQ_DATASET`
-(default `ab_sandbox`) or `PORT` (default `3003`). Credentials stay in `~/.config/gcloud`, never in the repo or the browser.
-
-## How it fits together
-
-```
- Browser (React)  ──►  Vite dev server :3002  ──/api──►  server/index.ts :3003  ──SQL──►  BigQuery
-   │                                                          │
-   │ z-test, Welch, Bayesian, CUPED run here                  └─ returns per-variant aggregates only
-   ▼                                                             (n, mean, variance, cov with pre-period)
- Simulator generates users in the browser
-```
-
-BigQuery does the heavy lifting with one `GROUP BY variant`. The browser receives two rows and runs the same
-statistics code as in simulator mode.
+To use your own project: run [`docs/bigquery/setup.sql`](docs/bigquery/setup.sql) in the BigQuery console (it creates four
+dummy tables: `users` +15%, `users_loss` -15%, `users_aa` 0%, `users_small` +3%), run `gcloud auth application-default login`,
+then `yarn start` and pick **Data source → BigQuery**. Credentials stay in `~/.config/gcloud`, never in the repo or the browser.
+Step-by-step details are in [`GUIDE.md`](GUIDE.md#5-the-bigquery-source).
 
 ## Project structure
 
@@ -79,7 +57,8 @@ src/
   bq/           client for the local API
   components/   Experiment / Power tabs, result row, panels
 server/         local BigQuery API (aggregates only) and SQL builder
-docs/           Russian guide (GUIDE.ru.md + PDF), BigQuery setup SQL, PDF build scripts (GUIDE.md, the English guide, is in the repo root)
+docs/bigquery/  setup.sql for the dummy tables
+GUIDE.md        walkthrough of every control and number, with exercises
 ```
 
 ## Scripts
@@ -100,9 +79,3 @@ docs/           Russian guide (GUIDE.ru.md + PDF), BigQuery setup SQL, PDF build
 - BigQuery mode has no time dimension, so peeking, A/A and bootstrap are simulator-only.
 - Ideas: sequential testing (always-valid p-values), multiple-comparison corrections, real GA4 export as the source,
   timestamps in the dummy table so peeking works on real data.
-
-## Learning material
-
-[`GUIDE.md`](GUIDE.md) walks through every control and number, with exercises (a Russian version is in
-[`docs/GUIDE.ru.md`](docs/GUIDE.ru.md)). A Russian PDF version with charts and a glossary is in
-[`docs/AB-sandbox-guide.pdf`](docs/AB-sandbox-guide.pdf).
