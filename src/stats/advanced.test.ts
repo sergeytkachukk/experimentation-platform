@@ -86,3 +86,37 @@ describe('power', () => {
     expect(powerProportions(1000, 0.1, 0)).toBeCloseTo(0.05, 3)
   })
 })
+
+describe('cupedFromSummaries', () => {
+  it('matches cupedAdjust computed from user-level rows', async () => {
+    const { cupedFromSummaries } = await import('./cuped.ts')
+    const { summarize } = await import('./tests.ts')
+    const rng = createRng(11)
+    const gen = (n: number, shift: number) => {
+      const x: number[] = []
+      const y: number[] = []
+      for (let i = 0; i < n; i++) {
+        const xi = 3 + normalSample(rng)
+        x.push(xi)
+        y.push(shift + 0.6 * xi + normalSample(rng))
+      }
+      return { x, y }
+    }
+    const c = gen(5000, 0)
+    const t = gen(6000, 0.2)
+    const summary = (g: { x: number[]; y: number[] }) => {
+      const sx = summarize(g.x)
+      const sy = summarize(g.y)
+      let cov = 0
+      for (let i = 0; i < g.x.length; i++) cov += (g.x[i] - sx.mean) * (g.y[i] - sy.mean)
+      return { n: sx.n, mean: sy.mean, variance: sy.variance, meanX: sx.mean, varX: sx.variance, cov: cov / (sx.n - 1) }
+    }
+    const fromRows = cupedAdjust(c, t)
+    const fromAgg = cupedFromSummaries(summary(c), summary(t))
+    expect(fromAgg.theta).toBeCloseTo(fromRows.theta, 8)
+    expect(fromAgg.correlation).toBeCloseTo(fromRows.correlation, 8)
+    expect(fromAgg.varianceReduction).toBeCloseTo(fromRows.varianceReduction, 8)
+    expect(fromAgg.control.mean).toBeCloseTo(summarize(fromRows.control).mean, 8)
+    expect(fromAgg.treatment.variance).toBeCloseTo(summarize(fromRows.treatment).variance, 8)
+  })
+})

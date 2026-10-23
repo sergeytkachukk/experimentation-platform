@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function PeekingPanel({ w, aa, setAa }: Props) {
-  const { params, sim, prior } = w
+  const { params, prior } = w
   const [chart, setChart] = useState<'p' | 'bayes'>('p')
   const [progress, setProgress] = useState<number | null>(null)
 
@@ -49,7 +49,7 @@ export default function PeekingPanel({ w, aa, setAa }: Props) {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={sim.path}>
+          <LineChart data={w.path}>
             <CartesianGrid stroke={GRID} />
             <XAxis dataKey="n" stroke="#8d97a8" />
             <YAxis domain={[0, 1]} stroke="#8d97a8" />

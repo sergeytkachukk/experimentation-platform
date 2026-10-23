@@ -4,11 +4,11 @@ import { Banner, Help, Stat } from '../ui.tsx'
 import type { Workspace } from '../workspace.ts'
 
 export default function ResultsPanel({ w }: { w: Workspace }) {
-  const { params, sim, active: a, useCuped, prior } = w
+  const { params, source, srmPValue, active: a, useCuped, prior } = w
   const { freq, bayes } = a
   const isRevenue = params.metric === 'revenue'
   const significant = freq.pValue < params.alpha
-  const srmBad = sim.srmPValue < 0.001
+  const srmBad = srmPValue < 0.001
   const fmtVal = (x: number) => (isRevenue || useCuped ? x.toFixed(4) : pct(x))
   const needed = sampleSizePerVariant(params.baseline, Math.max(Math.abs(params.relativeEffect), 0.001), params.alpha) * 2
 
@@ -37,13 +37,13 @@ export default function ResultsPanel({ w }: { w: Workspace }) {
             <Stat label="Uplift" value={pct(freq.uplift)} />
             <Stat label="p-value" value={fmtP(freq.pValue)} tone={significant ? 'good' : undefined} />
             <Stat label={`${pct(1 - params.alpha, 0)} CI (absolute diff)`} value={`[${fmtVal(freq.ci[0])}, ${fmtVal(freq.ci[1])}]`} small />
-            <Stat label="SRM p-value" value={fmtP(sim.srmPValue)} tone={srmBad ? 'bad' : undefined} />
+            <Stat label="SRM p-value" value={fmtP(srmPValue)} tone={srmBad ? 'bad' : undefined} />
           </div>
           <Help>
             {significant ? 'Statistically significant' : 'Not significant'} at alpha={params.alpha}: p-value is the chance of a gap this big if there were no real effect.
             The CI is the plausible range of the absolute difference; if it includes 0, the result is not significant.
             SRM checks that the actual split matches the plan; red means the experiment is broken.{' '}
-            {!isRevenue && <>Detecting a {pct(Math.abs(params.relativeEffect), 1)} lift with 80% power needs about {needed.toLocaleString()} users in total.</>}
+            {source === 'simulator' && !isRevenue && <>Detecting a {pct(Math.abs(params.relativeEffect), 1)} lift with 80% power needs about {needed.toLocaleString()} users in total.</>}
           </Help>
         </div>
 

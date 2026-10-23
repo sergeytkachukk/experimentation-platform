@@ -33,11 +33,14 @@ export default function AdvancedPanel({ w, boot, setBoot }: Props) {
   const bootKey = JSON.stringify([params, useCuped])
   const fresh = boot?.key === bootKey
 
+  const { controlValues, treatmentValues } = a
+  const hasRows = controlValues !== undefined && treatmentValues !== undefined
   const runBootstrap = () => {
+    if (!controlValues || !treatmentValues) return
     setBusy(true)
     // Let the "running" state paint before the (synchronous) resampling loop blocks the thread.
     setTimeout(() => {
-      setBoot({ result: bootstrapMeanDiff(a.controlValues, a.treatmentValues, { resamples, alpha: params.alpha, seed: params.seed }), key: bootKey, resamples })
+      setBoot({ result: bootstrapMeanDiff(controlValues, treatmentValues, { resamples, alpha: params.alpha, seed: params.seed }), key: bootKey, resamples })
       setBusy(false)
     }, 20)
   }
@@ -73,7 +76,11 @@ export default function AdvancedPanel({ w, boot, setBoot }: Props) {
 
       <div className="panel">
         <h2>Bootstrap (difference in means)</h2>
-        <button onClick={runBootstrap} disabled={busy}>{busy ? 'Resampling…' : `Run ${resamples.toLocaleString()} resamples`}</button>
+        {hasRows ? (
+          <button onClick={runBootstrap} disabled={busy}>{busy ? 'Resampling…' : `Run ${resamples.toLocaleString()} resamples`}</button>
+        ) : (
+          <p className="note">Bootstrap needs user-level rows. BigQuery data is loaded as per-variant aggregates, so it is only available for the simulator.</p>
+        )}
         {boot && (
           <>
             {!fresh && <p className="note">Parameters changed since this run, press the button again to refresh.</p>}

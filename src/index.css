@@ -75,3 +75,7 @@ details.help .note { margin: 4px 0 0; }
 .banner.warn { border-left-color: #e8b04a; } .banner.warn b { color: #e8b04a; }
 .banner.neutral { border-left-color: var(--muted); }
 .stale { opacity: 0.6; transition: opacity 0.15s; }
+.seg.wide { margin: 6px 0 0; }
+.seg.wide button { flex: 1; margin: 0; }
+.setup .note.bad, .note.bad { color: var(--bad); }
+input[type='text'] { width: 100%; }

@@ -68,7 +68,7 @@ function pathPoint(p: SimParams, c: MeanSample, t: MeanSample, priorSd: number |
 }
 
 // Chi-square goodness-of-fit (1 df) p-value for the observed split vs the intended one.
-function srmPValue(controlN: number, treatmentN: number, intendedTreatmentShare: number): number {
+export function srmPValue(controlN: number, treatmentN: number, intendedTreatmentShare: number): number {
   const n = controlN + treatmentN
   const expT = n * intendedTreatmentShare
   const expC = n - expT
