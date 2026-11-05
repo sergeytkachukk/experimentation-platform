@@ -1,5 +1,6 @@
 {
   "name": "experimentation-platform",
+  "description": "Interactive A/B testing lab: set a true effect, simulate users, and watch frequentist and Bayesian statistics find it, or lie.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
